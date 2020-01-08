@@ -6,7 +6,7 @@ module "bootkube" {
   # Cannot use cyclic dependencies on controllers or their DNS records
   api_servers          = [format("%s-private.%s", var.cluster_name, var.dns_zone)]
   api_servers_external = [format("%s.%s", var.cluster_name, var.dns_zone)]
-  etcd_servers         = aws_route53_record.etcds.*.fqdn
+  etcd_servers         = [for device in packet_device.controllers: format("%s-etcd%d.%s.", var.cluster_name, index(packet_device.controllers, device), var.dns_zone)]
   asset_dir            = var.asset_dir
   networking           = var.networking
   network_mtu          = var.network_mtu
