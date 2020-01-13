@@ -59,7 +59,7 @@ resource "null_resource" "setup_metallb" {
       "curl -L  https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl -o /tmp/kubectl",
       "chmod +x /tmp/kubectl",
       "/tmp/kubectl --kubeconfig=/tmp/kubeconfig apply -f https://raw.githubusercontent.com/google/metallb/v0.8.1/manifests/metallb.yaml",
-      "/tmp/kubectl --kubeconfig=/tmp/kubeconfig apply -f /tmp/metallb-config.yaml",
+      "/tmp/kubectl --kubeconfig=/tmp/kubeconfig apply -f /tmp/metallb-config.yaml", # CHECKED
     ]
   }
 
@@ -80,4 +80,29 @@ data "template_file" "metallb_config" {
   vars = {
     cidr = packet_reserved_ip_block.load_balancer_ips.cidr_notation
   }
+}
+
+# Setup Calico for Metallb
+resource "null_resource" "setup_calico" {
+  connection {
+    type    = "ssh"
+    host    = packet_device.controllers[0].access_public_ipv4
+    user    = "core"
+    timeout = "15m"
+  }
+
+  provisioner "file" {
+    # TODO rename this folder
+    source      = "${path.module}/network/calico"
+    destination = "/tmp/"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      # TODO this pretty much only deletes in order to get rid of old calico-node, figure out something neater
+      "/tmp/kubectl --kubeconfig=/tmp/kubeconfig delete -f /tmp/calico/",
+      "/tmp/kubectl --kubeconfig=/tmp/kubeconfig apply -f /tmp/calico/",
+    ]
+  }
+  depends_on = [null_resource.setup_metallb]
 }
