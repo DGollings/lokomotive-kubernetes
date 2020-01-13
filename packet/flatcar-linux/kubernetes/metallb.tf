@@ -23,17 +23,17 @@ resource "null_resource" "setup_calico_metallb" {
 
   provisioner "file" {
     content     = data.template_file.calico_metallb.rendered
-    destination = "/tmp/calico/metallb.yaml"
+    destination = "/tmp/metallb.yaml"
   }
 
   provisioner "file" {
-    content     = module.bootkube.kubeconfig-admin.rendered
+    content     = module.bootkube.kubeconfig-admin
     destination = "/tmp/kubeconfig"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "DATASTORE_TYPE=kubernetes KUBECONFIG=/tmp/kubeconfig /tmp/calico/calicoctl create -f /tmp/calico/metallb.yaml",
+      "DATASTORE_TYPE=kubernetes KUBECONFIG=/tmp/kubeconfig /tmp/calicoctl create -f /tmp/metallb.yaml",
     ]
   }
 }
