@@ -5,7 +5,7 @@ set -x
 HOSTNAME=$1
 PEER_IP=$2
 
-cat << EOF | DATASTORE_TYPE=kubernetes KUBECONFIG=/tmp/kubeconfig /tmp/calico/calicoctl create -f -
+cat << EOF | DATASTORE_TYPE=kubernetes KUBECONFIG=/tmp/kubeconfig /tmp/calicoctl create -f -
 apiVersion: projectcalico.org/v3
 kind: BGPPeer
 metadata:
