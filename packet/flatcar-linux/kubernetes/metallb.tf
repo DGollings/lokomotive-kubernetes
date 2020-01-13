@@ -1,15 +1,8 @@
 # Get some public IPs to use for our load balancer
 resource "packet_reserved_ip_block" "load_balancer_ips" {
   project_id = var.project_id
-  facilities = [var.facility]
+  facility   = var.facility
   quantity   = 2
-}
-
-# Enable BGP on each worker node
-resource "packet_bgp_session" "kube_bgp" {
-  count          = var.worker_count
-  device_id      = packet_device.nodes.*.id[count.index]
-  address_family = "ipv4"
 }
 
 # Add Calico configs to make MetalLB work
@@ -34,7 +27,7 @@ resource "null_resource" "setup_calico_metallb" {
   }
 
   provisioner "file" {
-    content     = data.module.bootkube.kubeconfig-admin.rendered
+    content     = module.bootkube.kubeconfig-admin.rendered
     destination = "/tmp/kubeconfig"
   }
 
@@ -67,33 +60,6 @@ resource "null_resource" "setup_metallb" {
       "chmod +x /tmp/kubectl",
       "/tmp/kubectl --kubeconfig=/tmp/kubeconfig apply -f https://raw.githubusercontent.com/google/metallb/v0.8.1/manifests/metallb.yaml",
       "/tmp/kubectl --kubeconfig=/tmp/kubeconfig apply -f /tmp/metallb-config.yaml",
-    ]
-  }
-
-  depends_on = [null_resource.setup_calico_metallb]
-}
-
-# Add each node's peer to as a Calico bgppeer
-resource "null_resource" "calico_node_peers" {
-  count = var.worker_count
-
-  connection {
-    type    = "ssh"
-    host    = packet_device.controllers[count.index].access_public_ipv4
-    user    = "core"
-    timeout = "15m"
-  }
-
-  provisioner "file" {
-    # TODO rename scripts folder
-    source      = "${path.module}/scripts/calico-bgppeer.sh"
-    destination = "/tmp/calico/bgppeer-${count.index}.sh"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "chmod +x /tmp/calico/bgppeer-${count.index}.sh",
-      "/tmp/calico/bgppeer-${count.index}.sh ${element(packet_device.nodes.*.hostname, count.index)} ${element(data.external.private_ipv4_gateway.*.result.peer_ip, count.index)}",
     ]
   }
 
