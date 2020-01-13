@@ -85,18 +85,6 @@ resource "null_resource" "bootkube-start" {
     destination = "$HOME/assets"
   }
 
-  # TODO this looks like a pretty good spot to dump all those yamls
-
-  # provisioner "file" {
-  #   content     = data.template_file.host_protection_policy.rendered
-  #   destination = "$HOME/assets/manifests-networking/calico-policy.yaml"
-  # }
-
-  # provisioner "file" {
-  #   source      = "${path.module}/calico/host-endpoint-controller.yaml"
-  #   destination = "$HOME/assets/manifests-networking/host-endpoint-controller.yaml"
-  # }
-
   provisioner "remote-exec" {
     inline = [
       "sudo mv $HOME/assets /opt/bootkube",
@@ -104,26 +92,3 @@ resource "null_resource" "bootkube-start" {
     ]
   }
 }
-
-# data "template_file" "controller_host_endpoints" {
-#   count    = var.controller_count
-#   template = file("${path.module}/calico/controller-host-endpoint.yaml.tmpl")
-
-#   vars = {
-#     node_name = packet_device.controllers[count.index].hostname
-#   }
-# }
-
-# data "template_file" "host_protection_policy" {
-#   template = file("${path.module}/calico/host-protection.yaml.tmpl")
-
-#   vars = {
-#     controller_host_endpoints = join(
-#       "\n",
-#       data.template_file.controller_host_endpoints.*.rendered,
-#     )
-#     management_cidrs       = jsonencode(var.management_cidrs)
-#     cluster_internal_cidrs = jsonencode([var.node_private_cidr, var.pod_cidr, var.service_cidr])
-#     etcd_server_cidrs      = jsonencode(packet_device.controllers.*.access_private_ipv4)
-#   }
-# }
