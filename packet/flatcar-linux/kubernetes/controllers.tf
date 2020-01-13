@@ -77,5 +77,6 @@ data "template_file" "etcds" {
   vars = {
     index        = count.index
     cluster_name = var.cluster_name
+    dns_zone     = var.dns_zone
   }
 }
